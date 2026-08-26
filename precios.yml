@@ -1,0 +1,32 @@
+name: Actualizar precios
+
+# Corre de lunes a viernes a las 22:15 UTC (5:15 p. m. en Colombia, tras el cierre
+# de la BVC) y también a mano desde la pestaña Actions.
+on:
+  schedule:
+    - cron: "15 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  precios:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Consultar TRM y precios
+        run: node .github/scripts/precios.mjs
+
+      - name: Publicar si algo cambió
+        run: |
+          if git diff --quiet -- precios.json; then
+            echo "Sin cambios."
+          else
+            git config user.name "actualizador"
+            git config user.email "actions@github.com"
+            git add precios.json
+            git commit -m "Precios $(date -u +%Y-%m-%d)"
+            git push
+          fi
